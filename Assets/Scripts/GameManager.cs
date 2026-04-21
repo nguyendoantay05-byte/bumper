@@ -6,6 +6,9 @@ using UnityEngine;
 /// </summary>
 public class GameManager : MonoBehaviour
 {
+    private const float KnockoutCreditWindow = 4f;
+    private const float KnockoutGrowthStep = 0.08f;
+
     public static GameManager Instance { get; private set; }
 
     private enum MapStyle
@@ -127,6 +130,7 @@ public class GameManager : MonoBehaviour
 
         if (fighter == playerInstance)
         {
+            AwardEliminationCredit(fighter);
             state = MatchState.Finished;
             if (UIManager.Instance != null)
             {
@@ -144,21 +148,7 @@ public class GameManager : MonoBehaviour
         if (fighter is BotController)
         {
             eliminatedBots++;
-
-            FighterController impactSource = fighter.LastImpactSource;
-            bool playerEarnedKnockout = impactSource != null
-                && impactSource == playerInstance
-                && Time.time - fighter.LastImpactTime <= 4f;
-
-            if (playerEarnedKnockout)
-            {
-                playerKnockouts++;
-            }
-
-            if (playerInstance != null && !playerInstance.IsEliminated)
-            {
-                playerInstance.GrowAfterElimination(0.08f);
-            }
+            AwardEliminationCredit(fighter);
         }
 
         RemoveFighterFromList(fighter);
@@ -350,23 +340,7 @@ public class GameManager : MonoBehaviour
 
     private void SelectRandomMapStyle()
     {
-        MapStyle[] mapStyles =
-        {
-            MapStyle.ClassicIsland,
-            MapStyle.LagoonRing,
-            MapStyle.LongStrip,
-            MapStyle.PebbleIsland,
-            MapStyle.StarfishBay,
-            MapStyle.TwinLagoon,
-            MapStyle.CrescentAtoll,
-            MapStyle.CoralMaze,
-            MapStyle.SplitShoals,
-            MapStyle.SunkenCrown,
-            MapStyle.TurtleBack,
-            MapStyle.DiamondCay
-        };
-
-        currentMapStyle = mapStyles[Random.Range(0, mapStyles.Length)];
+        currentMapStyle = MapStyle.ClassicIsland;
     }
 
     private void ConfigureRuntimeScene()
@@ -392,7 +366,7 @@ public class GameManager : MonoBehaviour
         }
 
         mainCamera.orthographic = true;
-        mainCamera.orthographicSize = 11.8f;
+        mainCamera.orthographicSize = 14.4f;
         mainCamera.clearFlags = CameraClearFlags.SolidColor;
         mainCamera.backgroundColor = new Color(0.2f, 0.62f, 0.94f, 1f);
         mainCamera.transform.position = new Vector3(0f, 2f, -10f);
@@ -2114,5 +2088,31 @@ public class GameManager : MonoBehaviour
         {
             cameraFollow.SetTarget(target);
         }
+    }
+
+    private void AwardEliminationCredit(FighterController eliminatedFighter)
+    {
+        if (eliminatedFighter == null)
+        {
+            return;
+        }
+
+        FighterController impactSource = eliminatedFighter.LastImpactSource;
+        bool hasValidKnockoutSource = impactSource != null
+            && impactSource != eliminatedFighter
+            && !impactSource.IsEliminated
+            && Time.time - eliminatedFighter.LastImpactTime <= KnockoutCreditWindow;
+
+        if (!hasValidKnockoutSource)
+        {
+            return;
+        }
+
+        if (impactSource == playerInstance)
+        {
+            playerKnockouts++;
+        }
+
+        impactSource.GrowAfterElimination(KnockoutGrowthStep);
     }
 }

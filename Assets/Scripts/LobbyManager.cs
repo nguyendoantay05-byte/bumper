@@ -25,7 +25,9 @@ public class LobbyManager : MonoBehaviour
 
         if (instructionsText != null)
         {
-            instructionsText.text = "Nhập tên của bạn, sau đó bấm Chơi để bắt đầu trận đấu với bot.";
+            instructionsText.text = "Nhập tên của bạn để bắt đầu chơi";
+            instructionsText.fontSize = 20;
+            instructionsText.alignment = TextAlignmentOptions.Center;
         }
 
         RefreshBotCountText();

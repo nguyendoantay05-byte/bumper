@@ -20,6 +20,12 @@ public class UIManager : MonoBehaviour
     [SerializeField] private TMP_Text resultTitleText;
     [SerializeField] private TMP_Text resultDescriptionText;
 
+    private GameObject pausePanel;
+    private Button pauseButton;
+    private Button resumeButton;
+    private Button quitButton;
+    private bool isPaused;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -35,6 +41,7 @@ public class UIManager : MonoBehaviour
     {
         UIRuntimeFix.Apply();
         BuildRuntimeHudDecor();
+        BuildPauseMenu();
         WireButtons();
         HideResult();
         RefreshHUD();
@@ -43,6 +50,23 @@ public class UIManager : MonoBehaviour
     private void Update()
     {
         RefreshHUD();
+
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            if (isPaused)
+            {
+                ResumeGame();
+            }
+            else
+            {
+                PauseGame();
+            }
+        }
+    }
+
+    private void OnDisable()
+    {
+        SetPauseState(false);
     }
 
     public void RefreshHUD()
@@ -101,6 +125,26 @@ public class UIManager : MonoBehaviour
         }
     }
 
+    public void OnPauseClicked()
+    {
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayButton();
+        }
+
+        PauseGame();
+    }
+
+    public void OnResumeClicked()
+    {
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayButton();
+        }
+
+        ResumeGame();
+    }
+
     public void OnReplayClicked()
     {
         if (AudioManager.Instance != null)
@@ -121,6 +165,8 @@ public class UIManager : MonoBehaviour
             AudioManager.Instance.PlayButton();
         }
 
+        SetPauseState(false);
+
         if (GameManager.Instance != null)
         {
             GameManager.Instance.ReturnToMenu();
@@ -131,6 +177,23 @@ public class UIManager : MonoBehaviour
     {
         BindButton("ReplayButton", OnReplayClicked);
         BindButton("Back To MenuButton", OnBackToMenuClicked);
+        if (pauseButton != null)
+        {
+            pauseButton.onClick.RemoveAllListeners();
+            pauseButton.onClick.AddListener(OnPauseClicked);
+        }
+
+        if (resumeButton != null)
+        {
+            resumeButton.onClick.RemoveAllListeners();
+            resumeButton.onClick.AddListener(OnResumeClicked);
+        }
+
+        if (quitButton != null)
+        {
+            quitButton.onClick.RemoveAllListeners();
+            quitButton.onClick.AddListener(OnBackToMenuClicked);
+        }
     }
 
     private void BuildRuntimeHudDecor()
@@ -152,7 +215,43 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-        Transform existing = textRect.parent.Find("HudCard");
+        Transform canvasRoot = textRect.parent;
+        Transform layoutRoot = canvasRoot.Find("HudLayoutRoot");
+        RectTransform layoutRect;
+        if (layoutRoot != null)
+        {
+            layoutRect = layoutRoot as RectTransform;
+        }
+        else
+        {
+            GameObject layoutObject = new GameObject("HudLayoutRoot");
+            layoutObject.transform.SetParent(canvasRoot, false);
+            layoutRect = layoutObject.AddComponent<RectTransform>();
+        }
+
+        if (layoutRect == null)
+        {
+            return;
+        }
+
+        layoutRect.anchorMin = new Vector2(0f, 1f);
+        layoutRect.anchorMax = new Vector2(0f, 1f);
+        layoutRect.pivot = new Vector2(0f, 1f);
+        layoutRect.anchoredPosition = new Vector2(8f, -8f);
+        layoutRect.sizeDelta = new Vector2(210f, 78f);
+
+        playerNameText.rectTransform.SetParent(layoutRect, false);
+        if (botsRemainingText != null)
+        {
+            botsRemainingText.rectTransform.SetParent(layoutRect, false);
+        }
+
+        if (eliminatedText != null)
+        {
+            eliminatedText.rectTransform.SetParent(layoutRect, false);
+        }
+
+        Transform existing = layoutRect.Find("HudCard");
         Image cardImage;
         if (existing != null)
         {
@@ -161,26 +260,28 @@ public class UIManager : MonoBehaviour
         else
         {
             GameObject card = new GameObject("HudCard");
-            card.transform.SetParent(textRect.parent, false);
+            card.transform.SetParent(layoutRect, false);
             card.transform.SetSiblingIndex(0);
-            RectTransform rect = card.AddComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0f, 1f);
-            rect.anchorMax = new Vector2(0f, 1f);
-            rect.pivot = new Vector2(0f, 1f);
-            rect.anchoredPosition = new Vector2(18f, -18f);
-            rect.sizeDelta = new Vector2(250f, 98f);
+            card.AddComponent<RectTransform>();
             cardImage = card.AddComponent<Image>();
         }
 
         if (cardImage != null)
         {
-            cardImage.color = new Color(0.05f, 0.09f, 0.16f, 0.82f);
+            cardImage.color = new Color(0.06f, 0.1f, 0.17f, 0.88f);
+            RectTransform rect = cardImage.rectTransform;
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = Vector2.zero;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
         }
 
-        CreateHudAccent(textRect.parent);
-        ApplyHudTextStyle(playerNameText, new Vector2(20f, -18f), new Vector2(190f, 28f), TextAlignmentOptions.Left, 18, FontStyles.Bold);
-        ApplyHudTextStyle(botsRemainingText, new Vector2(20f, -47f), new Vector2(150f, 24f), TextAlignmentOptions.Left, 15, FontStyles.Normal);
-        ApplyHudTextStyle(eliminatedText, new Vector2(20f, -72f), new Vector2(120f, 24f), TextAlignmentOptions.Left, 15, FontStyles.Normal);
+        CreateHudAccent(layoutRect);
+        ApplyHudTextStyle(playerNameText, new Vector2(14f, -10f), new Vector2(182f, 22f), TextAlignmentOptions.Left, 15, FontStyles.Bold);
+        ApplyHudTextStyle(botsRemainingText, new Vector2(14f, -34f), new Vector2(182f, 18f), TextAlignmentOptions.Left, 13, FontStyles.Normal);
+        ApplyHudTextStyle(eliminatedText, new Vector2(14f, -54f), new Vector2(182f, 18f), TextAlignmentOptions.Left, 13, FontStyles.Normal);
 
         if (statusText != null)
         {
@@ -206,18 +307,240 @@ public class UIManager : MonoBehaviour
             GameObject accent = new GameObject("HudAccent");
             accent.transform.SetParent(parent, false);
             accent.transform.SetSiblingIndex(1);
-            RectTransform rect = accent.AddComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0f, 1f);
-            rect.anchorMax = new Vector2(0f, 1f);
-            rect.pivot = new Vector2(0f, 1f);
-            rect.anchoredPosition = new Vector2(18f, -18f);
-            rect.sizeDelta = new Vector2(6f, 98f);
+            accent.AddComponent<RectTransform>();
             accentImage = accent.AddComponent<Image>();
         }
 
         if (accentImage != null)
         {
             accentImage.color = new Color(0.1f, 0.68f, 1f, 1f);
+            RectTransform rect = accentImage.rectTransform;
+            rect.anchorMin = new Vector2(0f, 0f);
+            rect.anchorMax = new Vector2(0f, 1f);
+            rect.pivot = new Vector2(0f, 0.5f);
+            rect.anchoredPosition = Vector2.zero;
+            rect.sizeDelta = new Vector2(5f, 0f);
+        }
+    }
+
+    private void BuildPauseMenu()
+    {
+        if (playerNameText == null)
+        {
+            return;
+        }
+
+        Canvas canvas = playerNameText.GetComponentInParent<Canvas>();
+        Transform canvasRoot = canvas != null ? canvas.transform : null;
+        if (canvasRoot == null)
+        {
+            return;
+        }
+
+        pauseButton = CreateTopRightButton(canvasRoot, "PauseButton", "II", new Vector2(-8f, -8f), new Vector2(42f, 34f));
+        pausePanel = CreateOverlayPanel(canvasRoot, "PausePanel");
+        pausePanel.SetActive(false);
+
+        RectTransform card = CreatePanelCard(pausePanel.transform, "PauseCard", new Vector2(260f, 170f));
+        CreatePanelTitle(card, "Tạm dừng", new Vector2(0f, -26f));
+        resumeButton = CreateMenuButton(card, "ResumeButton", "Tiếp tục", new Vector2(0f, -80f));
+        quitButton = CreateMenuButton(card, "QuitButton", "Thoát", new Vector2(0f, -126f));
+    }
+
+    private Button CreateTopRightButton(Transform parent, string name, string label, Vector2 anchoredPosition, Vector2 size)
+    {
+        Transform existing = parent.Find(name);
+        GameObject buttonObject = existing != null ? existing.gameObject : new GameObject(name);
+        if (existing == null)
+        {
+            buttonObject.transform.SetParent(parent, false);
+            buttonObject.AddComponent<RectTransform>();
+            buttonObject.AddComponent<Image>();
+            buttonObject.AddComponent<Button>();
+        }
+
+        RectTransform rect = buttonObject.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(1f, 1f);
+        rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(1f, 1f);
+        rect.anchoredPosition = anchoredPosition;
+        rect.sizeDelta = size;
+
+        Image image = buttonObject.GetComponent<Image>();
+        if (image != null)
+        {
+            image.color = new Color(0.08f, 0.12f, 0.2f, 0.92f);
+        }
+
+        TMP_Text text = EnsureButtonLabel(buttonObject.transform, label);
+        text.fontSize = 20;
+        text.fontStyle = FontStyles.Bold;
+        text.alignment = TextAlignmentOptions.Center;
+        text.characterSpacing = 8f;
+
+        return buttonObject.GetComponent<Button>();
+    }
+
+    private GameObject CreateOverlayPanel(Transform parent, string name)
+    {
+        Transform existing = parent.Find(name);
+        GameObject panelObject = existing != null ? existing.gameObject : new GameObject(name);
+        if (existing == null)
+        {
+            panelObject.transform.SetParent(parent, false);
+            panelObject.AddComponent<RectTransform>();
+            panelObject.AddComponent<Image>();
+        }
+
+        RectTransform rect = panelObject.GetComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+
+        Image image = panelObject.GetComponent<Image>();
+        if (image != null)
+        {
+            image.color = new Color(0f, 0.02f, 0.05f, 0.48f);
+        }
+
+        return panelObject;
+    }
+
+    private RectTransform CreatePanelCard(Transform parent, string name, Vector2 size)
+    {
+        Transform existing = parent.Find(name);
+        GameObject cardObject = existing != null ? existing.gameObject : new GameObject(name);
+        if (existing == null)
+        {
+            cardObject.transform.SetParent(parent, false);
+            cardObject.AddComponent<RectTransform>();
+            cardObject.AddComponent<Image>();
+        }
+
+        RectTransform rect = cardObject.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = Vector2.zero;
+        rect.sizeDelta = size;
+
+        Image image = cardObject.GetComponent<Image>();
+        if (image != null)
+        {
+            image.color = new Color(0.07f, 0.11f, 0.17f, 0.96f);
+        }
+
+        return rect;
+    }
+
+    private void CreatePanelTitle(RectTransform parent, string content, Vector2 anchoredPosition)
+    {
+        Transform existing = parent.Find("Title");
+        GameObject titleObject = existing != null ? existing.gameObject : new GameObject("Title");
+        if (existing == null)
+        {
+            titleObject.transform.SetParent(parent, false);
+            titleObject.AddComponent<RectTransform>();
+            titleObject.AddComponent<TextMeshProUGUI>();
+        }
+
+        RectTransform rect = titleObject.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 1f);
+        rect.anchorMax = new Vector2(0.5f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.anchoredPosition = anchoredPosition;
+        rect.sizeDelta = new Vector2(180f, 36f);
+
+        TMP_Text text = titleObject.GetComponent<TMP_Text>();
+        text.text = content;
+        text.fontSize = 24;
+        text.fontStyle = FontStyles.Bold;
+        text.alignment = TextAlignmentOptions.Center;
+        text.color = Color.white;
+    }
+
+    private Button CreateMenuButton(RectTransform parent, string name, string label, Vector2 anchoredPosition)
+    {
+        Transform existing = parent.Find(name);
+        GameObject buttonObject = existing != null ? existing.gameObject : new GameObject(name);
+        if (existing == null)
+        {
+            buttonObject.transform.SetParent(parent, false);
+            buttonObject.AddComponent<RectTransform>();
+            buttonObject.AddComponent<Image>();
+            buttonObject.AddComponent<Button>();
+        }
+
+        RectTransform rect = buttonObject.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 1f);
+        rect.anchorMax = new Vector2(0.5f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.anchoredPosition = anchoredPosition;
+        rect.sizeDelta = new Vector2(180f, 34f);
+
+        Image image = buttonObject.GetComponent<Image>();
+        if (image != null)
+        {
+            image.color = name == "QuitButton"
+                ? new Color(0.22f, 0.27f, 0.36f, 1f)
+                : new Color(0.12f, 0.61f, 1f, 1f);
+        }
+
+        TMP_Text text = EnsureButtonLabel(buttonObject.transform, label);
+        text.fontSize = 18;
+        text.fontStyle = FontStyles.Bold;
+        text.alignment = TextAlignmentOptions.Center;
+
+        return buttonObject.GetComponent<Button>();
+    }
+
+    private TMP_Text EnsureButtonLabel(Transform parent, string content)
+    {
+        Transform existing = parent.Find("Label");
+        GameObject labelObject = existing != null ? existing.gameObject : new GameObject("Label");
+        if (existing == null)
+        {
+            labelObject.transform.SetParent(parent, false);
+            labelObject.AddComponent<RectTransform>();
+            labelObject.AddComponent<TextMeshProUGUI>();
+        }
+
+        RectTransform rect = labelObject.GetComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+
+        TMP_Text text = labelObject.GetComponent<TMP_Text>();
+        text.text = content;
+        text.color = Color.white;
+        return text;
+    }
+
+    private void PauseGame()
+    {
+        if (resultPanel != null && resultPanel.activeSelf)
+        {
+            return;
+        }
+
+        SetPauseState(true);
+    }
+
+    private void ResumeGame()
+    {
+        SetPauseState(false);
+    }
+
+    private void SetPauseState(bool paused)
+    {
+        isPaused = paused;
+        Time.timeScale = paused ? 0f : 1f;
+
+        if (pausePanel != null)
+        {
+            pausePanel.SetActive(paused);
         }
     }
 
@@ -244,6 +567,8 @@ public class UIManager : MonoBehaviour
         text.fontSize = fontSize;
         text.fontStyle = fontStyle;
         text.color = Color.white;
+        text.enableWordWrapping = false;
+        text.overflowMode = TextOverflowModes.Ellipsis;
     }
 
     private void StyleResultPanel()

@@ -96,13 +96,13 @@ public class BotController : FighterController
 
         if (arenaBoundary != null)
         {
-            Vector2 toCenter = arenaBoundary.DirectionToCenter(Position);
-            float distanceToEdge = arenaBoundary.DistanceToEdge(Position);
+            float distanceToEdge = arenaBoundary.DistanceToEdge(Position, BoundarySampleRadius * 0.4f);
 
             if (distanceToEdge <= edgeAvoidDistance)
             {
-                // Khi đứng quá sát rìa, bot sẽ ưu tiên quay về trung tâm.
-                moveDirection += toCenter.normalized * edgeAvoidWeight;
+                float urgency = Mathf.InverseLerp(edgeAvoidDistance, -0.2f, distanceToEdge);
+                Vector2 recoveryDirection = arenaBoundary.GetRecoveryDirection(Position);
+                moveDirection += recoveryDirection * Mathf.Lerp(edgeAvoidWeight, edgeAvoidWeight * 2.25f, urgency);
             }
         }
 
@@ -165,7 +165,7 @@ public class BotController : FighterController
 
         if (arenaBoundary != null)
         {
-            float edgePressure = Mathf.Clamp01((edgeAvoidDistance + 1.5f - arenaBoundary.DistanceToEdge(candidate.Position)) / (edgeAvoidDistance + 1.5f));
+            float edgePressure = Mathf.Clamp01((edgeAvoidDistance + 1.5f - arenaBoundary.DistanceToEdge(candidate.Position, candidate.BoundarySampleRadius * 0.25f)) / (edgeAvoidDistance + 1.5f));
             score += edgePressure * (edgePunishWeight + 4.4f);
         }
 

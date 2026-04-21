@@ -47,6 +47,7 @@ public abstract class FighterController : MonoBehaviour
     public Rigidbody2D Body => rb;
     public FighterController LastImpactSource => lastImpactSource;
     public float LastImpactTime => lastImpactTime;
+    public float BoundarySampleRadius => GetBoundarySampleRadius();
 
     public Vector2 Position => rb != null ? rb.position : (Vector2)transform.position;
 
@@ -284,6 +285,24 @@ public abstract class FighterController : MonoBehaviour
             visual3D.RefreshBaseScale();
             visual3D.PlayImpactPulse(Mathf.Clamp01(clampedStep * 4f));
         }
+    }
+
+    private float GetBoundarySampleRadius()
+    {
+        CircleCollider2D circleCollider = cachedCollider as CircleCollider2D;
+        if (circleCollider != null)
+        {
+            float scale = Mathf.Max(Mathf.Abs(transform.lossyScale.x), Mathf.Abs(transform.lossyScale.y));
+            return circleCollider.radius * scale;
+        }
+
+        if (cachedCollider != null)
+        {
+            Bounds bounds = cachedCollider.bounds;
+            return Mathf.Max(bounds.extents.x, bounds.extents.y);
+        }
+
+        return 0.5f;
     }
 
     private IEnumerator FallIntoWaterRoutine()

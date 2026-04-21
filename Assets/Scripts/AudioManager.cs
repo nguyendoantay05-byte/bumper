@@ -6,6 +6,8 @@ using UnityEngine;
 /// </summary>
 public class AudioManager : MonoBehaviour
 {
+    private const string PreferredMusicClipName = "Graze the Roof - Laura Shigihara";
+
     public static AudioManager Instance { get; private set; }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -219,6 +221,20 @@ public class AudioManager : MonoBehaviour
         if (audioClips == null || audioClips.Length == 0)
         {
             return null;
+        }
+
+        for (int i = 0; i < audioClips.Length; i++)
+        {
+            AudioClip clip = audioClips[i];
+            if (clip == null)
+            {
+                continue;
+            }
+
+            if (clip.name == PreferredMusicClipName)
+            {
+                return clip;
+            }
         }
 
         AudioClip bestClip = null;

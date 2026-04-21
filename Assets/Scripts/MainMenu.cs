@@ -17,6 +17,7 @@ public class MainMenu : MonoBehaviour
         UIRuntimeFix.Apply();
         WireButtons();
         ApplyVietnameseLabels();
+        EnsureNavigationButtons();
         ShowMainPanel();
     }
 
@@ -131,6 +132,54 @@ public class MainMenu : MonoBehaviour
         SetTextByObjectName("BotLabel", "Số bot: 3");
     }
 
+    private void EnsureNavigationButtons()
+    {
+        EnsureBackButton(settingsPanel, OnBackFromSettings);
+        EnsureBackButton(howToPlayPanel, OnBackFromHowToPlay);
+    }
+
+    private void EnsureBackButton(GameObject panel, UnityEngine.Events.UnityAction action)
+    {
+        if (panel == null)
+        {
+            return;
+        }
+
+        Button button = FindPanelButton(panel.transform, "BackButton");
+        if (button == null)
+        {
+            button = CreateRuntimeButton(panel.transform, "BackButton", "Quay Lại");
+        }
+
+        RectTransform rect = button.GetComponent<RectTransform>();
+        if (rect != null)
+        {
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = panel == howToPlayPanel ? new Vector2(0f, -185f) : new Vector2(0f, -220f);
+            rect.sizeDelta = new Vector2(280f, 56f);
+        }
+
+        Image image = button.GetComponent<Image>();
+        if (image != null)
+        {
+            image.color = new Color(0.16f, 0.34f, 0.62f, 1f);
+        }
+
+        TMP_Text label = button.GetComponentInChildren<TMP_Text>(true);
+        if (label != null)
+        {
+            label.text = "Quay Lại";
+            label.fontSize = 24f;
+            label.alignment = TextAlignmentOptions.Center;
+        }
+
+        button.gameObject.SetActive(true);
+        button.onClick.RemoveAllListeners();
+        button.onClick.AddListener(action);
+    }
+
     private void SetButtonLabel(string buttonName, string labelText)
     {
         Button[] buttons = FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
@@ -165,16 +214,11 @@ public class MainMenu : MonoBehaviour
     {
         if (root != null)
         {
-            Button[] localButtons = root.GetComponentsInChildren<Button>(true);
-            for (int i = 0; i < localButtons.Length; i++)
+            Button localButton = FindPanelButton(root, buttonName);
+            if (localButton != null)
             {
-                if (localButtons[i].name != buttonName)
-                {
-                    continue;
-                }
-
-                localButtons[i].onClick.RemoveAllListeners();
-                localButtons[i].onClick.AddListener(action);
+                localButton.onClick.RemoveAllListeners();
+                localButton.onClick.AddListener(action);
                 return;
             }
         }
@@ -191,5 +235,54 @@ public class MainMenu : MonoBehaviour
             buttons[i].onClick.AddListener(action);
             return;
         }
+    }
+
+    private Button FindPanelButton(Transform root, string buttonName)
+    {
+        if (root == null)
+        {
+            return null;
+        }
+
+        Button[] localButtons = root.GetComponentsInChildren<Button>(true);
+        for (int i = 0; i < localButtons.Length; i++)
+        {
+            if (localButtons[i].name == buttonName)
+            {
+                return localButtons[i];
+            }
+        }
+
+        return null;
+    }
+
+    private Button CreateRuntimeButton(Transform parent, string buttonName, string labelText)
+    {
+        GameObject buttonObject = new GameObject(buttonName);
+        buttonObject.transform.SetParent(parent, false);
+
+        RectTransform rect = buttonObject.AddComponent<RectTransform>();
+        rect.localScale = Vector3.one;
+
+        Image image = buttonObject.AddComponent<Image>();
+        image.color = new Color(0.16f, 0.34f, 0.62f, 1f);
+
+        Button button = buttonObject.AddComponent<Button>();
+
+        GameObject labelObject = new GameObject("Label");
+        labelObject.transform.SetParent(buttonObject.transform, false);
+        RectTransform labelRect = labelObject.AddComponent<RectTransform>();
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = Vector2.zero;
+        labelRect.offsetMax = Vector2.zero;
+
+        TMP_Text label = labelObject.AddComponent<TextMeshProUGUI>();
+        label.text = labelText;
+        label.color = Color.white;
+        label.fontSize = 24f;
+        label.alignment = TextAlignmentOptions.Center;
+
+        return button;
     }
 }
