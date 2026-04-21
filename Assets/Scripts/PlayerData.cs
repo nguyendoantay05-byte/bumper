@@ -16,10 +16,10 @@ public static class PlayerData
 
     public static string GetPlayerName()
     {
-        string name = PlayerPrefs.GetString(PlayerNameKey, "Player");
+        string name = PlayerPrefs.GetString(PlayerNameKey, "Người chơi");
         if (string.IsNullOrWhiteSpace(name))
         {
-            name = "Player";
+            name = "Người chơi";
         }
 
         return name;
@@ -29,7 +29,7 @@ public static class PlayerData
     {
         if (string.IsNullOrWhiteSpace(playerName))
         {
-            playerName = "Player";
+            playerName = "Người chơi";
         }
 
         PlayerPrefs.SetString(PlayerNameKey, playerName.Trim());

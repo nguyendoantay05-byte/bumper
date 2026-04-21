@@ -16,7 +16,12 @@ public class GameManager : MonoBehaviour
         PebbleIsland,
         StarfishBay,
         TwinLagoon,
-        CrescentAtoll
+        CrescentAtoll,
+        CoralMaze,
+        SplitShoals,
+        SunkenCrown,
+        TurtleBack,
+        DiamondCay
     }
 
     private static Sprite cachedArenaFillSprite;
@@ -58,6 +63,7 @@ public class GameManager : MonoBehaviour
     private PlayerController playerInstance;
     private CameraFollow2D cameraFollow;
     private int eliminatedBots;
+    private int playerKnockouts;
     private MatchState state = MatchState.WaitingToStart;
     private float matchStartTime;
     private MapStyle currentMapStyle;
@@ -66,6 +72,7 @@ public class GameManager : MonoBehaviour
     public bool IsMatchRunning => state == MatchState.Playing;
     public PlayerController PlayerInstance => playerInstance;
     public int EliminatedBots => eliminatedBots;
+    public int PlayerKnockouts => playerKnockouts;
     public int RemainingBots => Mathf.Max(0, GetBotCount() - eliminatedBots);
 
     public string PlayerName => PlayerData.GetPlayerName();
@@ -137,6 +144,16 @@ public class GameManager : MonoBehaviour
         if (fighter is BotController)
         {
             eliminatedBots++;
+
+            FighterController impactSource = fighter.LastImpactSource;
+            bool playerEarnedKnockout = impactSource != null
+                && impactSource == playerInstance
+                && Time.time - fighter.LastImpactTime <= 4f;
+
+            if (playerEarnedKnockout)
+            {
+                playerKnockouts++;
+            }
 
             if (playerInstance != null && !playerInstance.IsEliminated)
             {
@@ -285,6 +302,7 @@ public class GameManager : MonoBehaviour
         activeFighters.Clear();
         playerInstance = null;
         eliminatedBots = 0;
+        playerKnockouts = 0;
         state = MatchState.WaitingToStart;
     }
 
@@ -340,7 +358,12 @@ public class GameManager : MonoBehaviour
             MapStyle.PebbleIsland,
             MapStyle.StarfishBay,
             MapStyle.TwinLagoon,
-            MapStyle.CrescentAtoll
+            MapStyle.CrescentAtoll,
+            MapStyle.CoralMaze,
+            MapStyle.SplitShoals,
+            MapStyle.SunkenCrown,
+            MapStyle.TurtleBack,
+            MapStyle.DiamondCay
         };
 
         currentMapStyle = mapStyles[Random.Range(0, mapStyles.Length)];
@@ -463,6 +486,59 @@ public class GameManager : MonoBehaviour
                 holeRadius = runtimeArenaRadius * 0.33f;
                 holeOffset = new Vector2(runtimeArenaRadius * 0.24f, runtimeArenaRadius * 0.24f);
                 break;
+            case MapStyle.CoralMaze:
+                baseRadius = islandScale * 1.06f;
+                waveA = islandScale * 0.16f;
+                waveB = islandScale * 0.11f;
+                waveC = islandScale * 0.08f;
+                extraHoles = new[]
+                {
+                    new ArenaBoundary.HoleZone(new Vector2(-runtimeArenaRadius * 0.18f, runtimeArenaRadius * 0.1f), runtimeArenaRadius * 0.12f),
+                    new ArenaBoundary.HoleZone(new Vector2(runtimeArenaRadius * 0.21f, runtimeArenaRadius * 0.22f), runtimeArenaRadius * 0.1f),
+                    new ArenaBoundary.HoleZone(new Vector2(runtimeArenaRadius * 0.06f, -runtimeArenaRadius * 0.18f), runtimeArenaRadius * 0.13f)
+                };
+                break;
+            case MapStyle.SplitShoals:
+                baseRadius = islandScale * 1.14f;
+                waveA = islandScale * 0.15f;
+                waveB = islandScale * 0.06f;
+                waveC = islandScale * 0.05f;
+                extraHoles = new[]
+                {
+                    new ArenaBoundary.HoleZone(new Vector2(0f, runtimeArenaRadius * 0.02f), runtimeArenaRadius * 0.18f),
+                    new ArenaBoundary.HoleZone(new Vector2(0f, -runtimeArenaRadius * 0.3f), runtimeArenaRadius * 0.11f)
+                };
+                break;
+            case MapStyle.SunkenCrown:
+                baseRadius = islandScale * 1.12f;
+                waveA = islandScale * 0.2f;
+                waveB = islandScale * 0.12f;
+                waveC = islandScale * 0.09f;
+                holeRadius = runtimeArenaRadius * 0.2f;
+                extraHoles = new[]
+                {
+                    new ArenaBoundary.HoleZone(new Vector2(-runtimeArenaRadius * 0.34f, 0f), runtimeArenaRadius * 0.1f),
+                    new ArenaBoundary.HoleZone(new Vector2(runtimeArenaRadius * 0.34f, 0f), runtimeArenaRadius * 0.1f),
+                    new ArenaBoundary.HoleZone(new Vector2(0f, runtimeArenaRadius * 0.34f), runtimeArenaRadius * 0.1f)
+                };
+                break;
+            case MapStyle.TurtleBack:
+                baseRadius = islandScale * 1.18f;
+                waveA = islandScale * 0.09f;
+                waveB = islandScale * 0.04f;
+                waveC = islandScale * 0.03f;
+                break;
+            case MapStyle.DiamondCay:
+                baseRadius = islandScale * 0.98f;
+                waveA = islandScale * 0.06f;
+                waveB = islandScale * 0.02f;
+                waveC = islandScale * 0.02f;
+                extraHoles = new[]
+                {
+                    new ArenaBoundary.HoleZone(new Vector2(-runtimeArenaRadius * 0.2f, runtimeArenaRadius * 0.22f), runtimeArenaRadius * 0.09f),
+                    new ArenaBoundary.HoleZone(new Vector2(runtimeArenaRadius * 0.22f, -runtimeArenaRadius * 0.2f), runtimeArenaRadius * 0.09f)
+                };
+                break;
         }
 
         boundary.ConfigureIslandShape(baseRadius, waveA, waveB, waveC, 0.72f, holeRadius, holeOffset, extraHoles);
@@ -573,6 +649,67 @@ public class GameManager : MonoBehaviour
                 offset += new Vector3(-runtimeArenaRadius * 0.08f, -runtimeArenaRadius * 0.08f, 0f);
                 return center + offset;
             }
+            case MapStyle.CoralMaze:
+            {
+                Vector3[] slots =
+                {
+                    center + new Vector3(-runtimeArenaRadius * 0.46f, -runtimeArenaRadius * 0.42f, 0f),
+                    center + new Vector3(runtimeArenaRadius * 0.48f, -runtimeArenaRadius * 0.34f, 0f),
+                    center + new Vector3(-runtimeArenaRadius * 0.48f, runtimeArenaRadius * 0.42f, 0f),
+                    center + new Vector3(runtimeArenaRadius * 0.18f, runtimeArenaRadius * 0.5f, 0f),
+                    center + new Vector3(runtimeArenaRadius * 0.48f, runtimeArenaRadius * 0.1f, 0f)
+                };
+
+                return slots[index < 0 ? 0 : index % slots.Length];
+            }
+            case MapStyle.SplitShoals:
+            {
+                Vector3[] slots =
+                {
+                    center + new Vector3(-runtimeArenaRadius * 0.56f, runtimeArenaRadius * 0.24f, 0f),
+                    center + new Vector3(runtimeArenaRadius * 0.56f, runtimeArenaRadius * 0.18f, 0f),
+                    center + new Vector3(-runtimeArenaRadius * 0.18f, -runtimeArenaRadius * 0.5f, 0f),
+                    center + new Vector3(runtimeArenaRadius * 0.18f, -runtimeArenaRadius * 0.54f, 0f),
+                    center + new Vector3(0f, runtimeArenaRadius * 0.56f, 0f)
+                };
+
+                return slots[index < 0 ? 0 : index % slots.Length];
+            }
+            case MapStyle.SunkenCrown:
+            {
+                if (index < 0)
+                {
+                    return center + new Vector3(0f, -runtimeArenaRadius * 0.5f, 0f);
+                }
+
+                float angle = ((Mathf.PI * 2f) / Mathf.Max(1, totalCount)) * index - 1.57f;
+                float radius = runtimeArenaRadius * 0.68f;
+                return center + new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * radius;
+            }
+            case MapStyle.TurtleBack:
+            {
+                if (index < 0)
+                {
+                    return center + new Vector3(0f, -runtimeArenaRadius * 0.6f, 0f);
+                }
+
+                float angle = ((Mathf.PI * 2f) / Mathf.Max(1, totalCount)) * index - 0.9f;
+                float radius = runtimeArenaRadius * (0.46f + (index % 2 == 0 ? 0.16f : 0.28f));
+                return center + new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * radius;
+            }
+            case MapStyle.DiamondCay:
+            {
+                Vector3[] slots =
+                {
+                    center + new Vector3(0f, -runtimeArenaRadius * 0.58f, 0f),
+                    center + new Vector3(runtimeArenaRadius * 0.58f, 0f, 0f),
+                    center + new Vector3(0f, runtimeArenaRadius * 0.58f, 0f),
+                    center + new Vector3(-runtimeArenaRadius * 0.58f, 0f, 0f),
+                    center + new Vector3(runtimeArenaRadius * 0.2f, runtimeArenaRadius * 0.18f, 0f)
+                };
+
+                return slots[index < 0 ? 0 : index % slots.Length];
+            }
             default:
             {
                 if (index < 0)
@@ -647,6 +784,15 @@ public class GameManager : MonoBehaviour
 
         CreateOrUpdateArenaLayer(
             arena.transform,
+            "WaterDeep",
+            squareSprite,
+            new Color(waterColor.r * 0.72f, waterColor.g * 0.78f, waterColor.b * 0.92f, 1f),
+            new Vector3(0f, -1.2f, 0f),
+            new Vector3(46f, 36f, 1f),
+            -16);
+
+        CreateOrUpdateArenaLayer(
+            arena.transform,
             "WaterBase",
             squareSprite,
             waterColor,
@@ -667,9 +813,9 @@ public class GameManager : MonoBehaviour
             arena.transform,
             "IslandShadow",
             islandSprite,
-            new Color(0f, 0f, 0f, 0.18f),
-            new Vector3(0.18f, -0.35f, 0f),
-            new Vector3(islandSize * 1.05f, islandSize * 1.05f, 1f),
+            new Color(0f, 0f, 0f, 0.24f),
+            new Vector3(0.3f, -0.54f, 0f),
+            new Vector3(islandSize * 1.1f, islandSize * 1.1f, 1f),
             -13);
 
         CreateOrUpdateArenaLayer(
@@ -677,7 +823,7 @@ public class GameManager : MonoBehaviour
             "IslandDeepSide",
             islandSprite,
             deepSideColor,
-            new Vector3(0f, -1.1f, 0f),
+            new Vector3(0f, -1.42f, 0f),
             new Vector3(islandSize * 1.01f, islandSize * 1.01f, 1f),
             -12);
 
@@ -686,9 +832,18 @@ public class GameManager : MonoBehaviour
             "IslandSide",
             islandSprite,
             islandSideColor,
-            new Vector3(0f, -0.62f, 0f),
+            new Vector3(0f, -0.88f, 0f),
             new Vector3(islandSize, islandSize, 1f),
             -11);
+
+        CreateOrUpdateArenaLayer(
+            arena.transform,
+            "IslandMidSide",
+            islandSprite,
+            Color.Lerp(islandSideColor, islandTopColor, 0.35f),
+            new Vector3(0f, -0.45f, 0f),
+            new Vector3(islandSize * 0.995f, islandSize * 0.995f, 1f),
+            -10);
 
         CreateOrUpdateArenaLayer(
             arena.transform,
@@ -697,7 +852,7 @@ public class GameManager : MonoBehaviour
             islandTopColor,
             Vector3.zero,
             new Vector3(islandSize, islandSize, 1f),
-            -10);
+            -9);
 
         CreateOrUpdateArenaLayer(
             arena.transform,
@@ -706,7 +861,7 @@ public class GameManager : MonoBehaviour
             new Color(0.75f, 0.69f, 0.5f, 0.22f),
             new Vector3(0.18f, -0.12f, 0f),
             new Vector3(patternSize, patternSize, 1f),
-            -9);
+            -8);
 
         CreateOrUpdateArenaLayer(
             arena.transform,
@@ -715,7 +870,16 @@ public class GameManager : MonoBehaviour
             new Color(0.84f, 0.78f, 0.57f, 0.55f),
             new Vector3(0.04f, -0.08f, 0f),
             new Vector3(islandSize * 1.015f, islandSize * 1.015f, 1f),
-            -8);
+            -7);
+
+        CreateOrUpdateArenaLayer(
+            arena.transform,
+            "IslandTopGlow",
+            islandSprite,
+            new Color(1f, 0.96f, 0.82f, 0.12f),
+            new Vector3(-0.18f, 0.34f, 0f),
+            new Vector3(islandSize * 0.76f, islandSize * 0.76f, 1f),
+            -6);
 
         CreateOrUpdateArenaLayer(
             arena.transform,
@@ -724,7 +888,7 @@ public class GameManager : MonoBehaviour
             new Color(1f, 0.97f, 0.82f, 0.16f),
             new Vector3(-0.02f, 0.14f, 0f),
             new Vector3(islandSize * 0.96f, islandSize * 0.96f, 1f),
-            -7);
+            -5);
 
         CreateOrUpdateArenaLayer(
             arena.transform,
@@ -733,7 +897,7 @@ public class GameManager : MonoBehaviour
             new Color(1f, 1f, 1f, 0.14f),
             new Vector3(0.08f, -0.18f, 0f),
             new Vector3(islandSize * 1.06f, islandSize * 1.06f, 1f),
-            -6);
+            -4);
 
         if (showInnerWater)
         {
@@ -1549,6 +1713,30 @@ public class GameManager : MonoBehaviour
                 CreateOrUpdateArenaLayer(parent, "ExtraHoleWaterA", GetArenaFillSprite(), waterColor, new Vector3(runtimeArenaRadius * 0.24f, runtimeArenaRadius * 0.24f, 0f), new Vector3(runtimeArenaRadius * 1.02f, runtimeArenaRadius * 1.02f, 1f), -5);
                 CreateOrUpdateArenaLayer(parent, "ExtraHoleFoamA", GetArenaRingSprite(), new Color(1f, 1f, 1f, 0.22f), new Vector3(runtimeArenaRadius * 0.24f, runtimeArenaRadius * 0.24f, 0f), new Vector3(runtimeArenaRadius * 1.1f, runtimeArenaRadius * 1.1f, 1f), -4);
                 break;
+            case MapStyle.CoralMaze:
+                CreateOrUpdateArenaLayer(parent, "ExtraHoleWaterA", GetArenaFillSprite(), waterColor, new Vector3(-runtimeArenaRadius * 0.18f, runtimeArenaRadius * 0.1f, 0f), new Vector3(runtimeArenaRadius * 0.34f, runtimeArenaRadius * 0.34f, 1f), -5);
+                CreateOrUpdateArenaLayer(parent, "ExtraHoleFoamA", GetArenaRingSprite(), new Color(1f, 1f, 1f, 0.22f), new Vector3(-runtimeArenaRadius * 0.18f, runtimeArenaRadius * 0.1f, 0f), new Vector3(runtimeArenaRadius * 0.4f, runtimeArenaRadius * 0.4f, 1f), -4);
+                CreateOrUpdateArenaLayer(parent, "ExtraHoleWaterB", GetArenaFillSprite(), waterColor, new Vector3(runtimeArenaRadius * 0.21f, runtimeArenaRadius * 0.22f, 0f), new Vector3(runtimeArenaRadius * 0.28f, runtimeArenaRadius * 0.28f, 1f), -5);
+                CreateOrUpdateArenaLayer(parent, "ExtraHoleFoamB", GetArenaRingSprite(), new Color(1f, 1f, 1f, 0.22f), new Vector3(runtimeArenaRadius * 0.21f, runtimeArenaRadius * 0.22f, 0f), new Vector3(runtimeArenaRadius * 0.34f, runtimeArenaRadius * 0.34f, 1f), -4);
+                break;
+            case MapStyle.SplitShoals:
+                CreateOrUpdateArenaLayer(parent, "ExtraHoleWaterA", GetArenaFillSprite(), waterColor, new Vector3(0f, runtimeArenaRadius * 0.02f, 0f), new Vector3(runtimeArenaRadius * 0.52f, runtimeArenaRadius * 0.52f, 1f), -5);
+                CreateOrUpdateArenaLayer(parent, "ExtraHoleFoamA", GetArenaRingSprite(), new Color(1f, 1f, 1f, 0.2f), new Vector3(0f, runtimeArenaRadius * 0.02f, 0f), new Vector3(runtimeArenaRadius * 0.6f, runtimeArenaRadius * 0.6f, 1f), -4);
+                CreateOrUpdateArenaLayer(parent, "ExtraHoleWaterB", GetArenaFillSprite(), waterColor, new Vector3(0f, -runtimeArenaRadius * 0.3f, 0f), new Vector3(runtimeArenaRadius * 0.3f, runtimeArenaRadius * 0.3f, 1f), -5);
+                CreateOrUpdateArenaLayer(parent, "ExtraHoleFoamB", GetArenaRingSprite(), new Color(1f, 1f, 1f, 0.18f), new Vector3(0f, -runtimeArenaRadius * 0.3f, 0f), new Vector3(runtimeArenaRadius * 0.38f, runtimeArenaRadius * 0.38f, 1f), -4);
+                break;
+            case MapStyle.SunkenCrown:
+                CreateOrUpdateArenaLayer(parent, "ExtraHoleWaterA", GetArenaFillSprite(), waterColor, new Vector3(-runtimeArenaRadius * 0.34f, 0f, 0f), new Vector3(runtimeArenaRadius * 0.3f, runtimeArenaRadius * 0.3f, 1f), -5);
+                CreateOrUpdateArenaLayer(parent, "ExtraHoleFoamA", GetArenaRingSprite(), new Color(1f, 1f, 1f, 0.18f), new Vector3(-runtimeArenaRadius * 0.34f, 0f, 0f), new Vector3(runtimeArenaRadius * 0.36f, runtimeArenaRadius * 0.36f, 1f), -4);
+                CreateOrUpdateArenaLayer(parent, "ExtraHoleWaterB", GetArenaFillSprite(), waterColor, new Vector3(runtimeArenaRadius * 0.34f, 0f, 0f), new Vector3(runtimeArenaRadius * 0.3f, runtimeArenaRadius * 0.3f, 1f), -5);
+                CreateOrUpdateArenaLayer(parent, "ExtraHoleFoamB", GetArenaRingSprite(), new Color(1f, 1f, 1f, 0.18f), new Vector3(runtimeArenaRadius * 0.34f, 0f, 0f), new Vector3(runtimeArenaRadius * 0.36f, runtimeArenaRadius * 0.36f, 1f), -4);
+                break;
+            case MapStyle.DiamondCay:
+                CreateOrUpdateArenaLayer(parent, "ExtraHoleWaterA", GetArenaFillSprite(), waterColor, new Vector3(-runtimeArenaRadius * 0.2f, runtimeArenaRadius * 0.22f, 0f), new Vector3(runtimeArenaRadius * 0.26f, runtimeArenaRadius * 0.26f, 1f), -5);
+                CreateOrUpdateArenaLayer(parent, "ExtraHoleFoamA", GetArenaRingSprite(), new Color(1f, 1f, 1f, 0.2f), new Vector3(-runtimeArenaRadius * 0.2f, runtimeArenaRadius * 0.22f, 0f), new Vector3(runtimeArenaRadius * 0.32f, runtimeArenaRadius * 0.32f, 1f), -4);
+                CreateOrUpdateArenaLayer(parent, "ExtraHoleWaterB", GetArenaFillSprite(), waterColor, new Vector3(runtimeArenaRadius * 0.22f, -runtimeArenaRadius * 0.2f, 0f), new Vector3(runtimeArenaRadius * 0.26f, runtimeArenaRadius * 0.26f, 1f), -5);
+                CreateOrUpdateArenaLayer(parent, "ExtraHoleFoamB", GetArenaRingSprite(), new Color(1f, 1f, 1f, 0.2f), new Vector3(runtimeArenaRadius * 0.22f, -runtimeArenaRadius * 0.2f, 0f), new Vector3(runtimeArenaRadius * 0.32f, runtimeArenaRadius * 0.32f, 1f), -4);
+                break;
         }
     }
 
@@ -1557,7 +1745,8 @@ public class GameManager : MonoBehaviour
         string[] decorationNames =
         {
             "StarDecorationShadow", "StarDecoration", "RockAShadow", "RockA", "RockBShadow", "RockB", "PalmShadow", "PalmTree",
-            "ExtraDeco1Shadow", "ExtraDeco1", "ExtraDeco2Shadow", "ExtraDeco2", "ExtraDeco3Shadow", "ExtraDeco3", "ExtraDeco4Shadow", "ExtraDeco4"
+            "ExtraDeco1Shadow", "ExtraDeco1", "ExtraDeco2Shadow", "ExtraDeco2", "ExtraDeco3Shadow", "ExtraDeco3", "ExtraDeco4Shadow", "ExtraDeco4",
+            "ExtraDeco5Shadow", "ExtraDeco5", "ExtraDeco6Shadow", "ExtraDeco6"
         };
 
         for (int i = 0; i < decorationNames.Length; i++)
@@ -1618,6 +1807,52 @@ public class GameManager : MonoBehaviour
                 CreateArenaDecoration(parent, "ExtraDeco2", GetSmallCircleSprite(), new Color(0.92f, 0.95f, 0.99f, 1f), new Vector3(4.52f, -1.9f, 0f), new Vector3(0.58f, 0.4f, 1f), -5);
                 CreateArenaDecoration(parent, "ExtraDeco3Shadow", GetStarSprite(), new Color(0f, 0f, 0f, 0.14f), new Vector3(-1.6f, 4.38f, 0f), new Vector3(1f, 1f, 1f), -6);
                 CreateArenaDecoration(parent, "ExtraDeco3", GetStarSprite(), new Color(0.97f, 0.73f, 0.86f, 1f), new Vector3(-1.76f, 4.58f, 0f), new Vector3(0.9f, 0.9f, 1f), -5);
+                break;
+            case MapStyle.CoralMaze:
+                CreateArenaDecoration(parent, "ExtraDeco1Shadow", GetPalmSprite(), new Color(0f, 0f, 0f, 0.18f), new Vector3(-5.6f, 2.8f, 0f), new Vector3(1.08f, 1f, 1f), -6);
+                CreateArenaDecoration(parent, "ExtraDeco1", GetPalmSprite(), new Color(0.22f, 0.68f, 0.34f, 1f), new Vector3(-5.8f, 3f, 0f), new Vector3(0.96f, 0.9f, 1f), -5);
+                CreateArenaDecoration(parent, "ExtraDeco2Shadow", GetPalmSprite(), new Color(0f, 0f, 0f, 0.18f), new Vector3(5.1f, -2.4f, 0f), new Vector3(1.18f, 1.1f, 1f), -6);
+                CreateArenaDecoration(parent, "ExtraDeco2", GetPalmSprite(), new Color(0.2f, 0.62f, 0.28f, 1f), new Vector3(4.9f, -2.18f, 0f), new Vector3(1.04f, 0.98f, 1f), -5);
+                CreateArenaDecoration(parent, "ExtraDeco3Shadow", GetStarSprite(), new Color(0f, 0f, 0f, 0.14f), new Vector3(0.56f, 4.7f, 0f), new Vector3(0.96f, 0.96f, 1f), -6);
+                CreateArenaDecoration(parent, "ExtraDeco3", GetStarSprite(), new Color(1f, 0.68f, 0.8f, 1f), new Vector3(0.4f, 4.88f, 0f), new Vector3(0.84f, 0.84f, 1f), -5);
+                CreateArenaDecoration(parent, "ExtraDeco4Shadow", GetSmallCircleSprite(), new Color(0f, 0f, 0f, 0.16f), new Vector3(-4.1f, -3.9f, 0f), new Vector3(0.68f, 0.46f, 1f), -6);
+                CreateArenaDecoration(parent, "ExtraDeco4", GetSmallCircleSprite(), new Color(0.95f, 0.98f, 1f, 1f), new Vector3(-4.26f, -3.7f, 0f), new Vector3(0.54f, 0.38f, 1f), -5);
+                break;
+            case MapStyle.SplitShoals:
+                CreateArenaDecoration(parent, "ExtraDeco1Shadow", GetPalmSprite(), new Color(0f, 0f, 0f, 0.18f), new Vector3(-6.32f, 0.9f, 0f), new Vector3(1.08f, 1f, 1f), -6);
+                CreateArenaDecoration(parent, "ExtraDeco1", GetPalmSprite(), new Color(0.24f, 0.66f, 0.31f, 1f), new Vector3(-6.5f, 1.1f, 0f), new Vector3(0.96f, 0.9f, 1f), -5);
+                CreateArenaDecoration(parent, "ExtraDeco2Shadow", GetPalmSprite(), new Color(0f, 0f, 0f, 0.18f), new Vector3(6.2f, 0.72f, 0f), new Vector3(1.08f, 1f, 1f), -6);
+                CreateArenaDecoration(parent, "ExtraDeco2", GetPalmSprite(), new Color(0.24f, 0.66f, 0.31f, 1f), new Vector3(6f, 0.92f, 0f), new Vector3(0.96f, 0.9f, 1f), -5);
+                CreateArenaDecoration(parent, "ExtraDeco3Shadow", GetSmallCircleSprite(), new Color(0f, 0f, 0f, 0.16f), new Vector3(0f, -5.1f, 0f), new Vector3(0.92f, 0.62f, 1f), -6);
+                CreateArenaDecoration(parent, "ExtraDeco3", GetSmallCircleSprite(), new Color(0.92f, 0.95f, 1f, 1f), new Vector3(-0.12f, -4.88f, 0f), new Vector3(0.74f, 0.48f, 1f), -5);
+                break;
+            case MapStyle.SunkenCrown:
+                CreateArenaDecoration(parent, "ExtraDeco1Shadow", GetStarSprite(), new Color(0f, 0f, 0f, 0.14f), new Vector3(-5.08f, 2.4f, 0f), new Vector3(1f, 1f, 1f), -6);
+                CreateArenaDecoration(parent, "ExtraDeco1", GetStarSprite(), new Color(0.98f, 0.75f, 0.84f, 1f), new Vector3(-5.22f, 2.58f, 0f), new Vector3(0.88f, 0.88f, 1f), -5);
+                CreateArenaDecoration(parent, "ExtraDeco2Shadow", GetStarSprite(), new Color(0f, 0f, 0f, 0.14f), new Vector3(5.08f, 2.4f, 0f), new Vector3(1f, 1f, 1f), -6);
+                CreateArenaDecoration(parent, "ExtraDeco2", GetStarSprite(), new Color(0.98f, 0.75f, 0.84f, 1f), new Vector3(4.94f, 2.58f, 0f), new Vector3(0.88f, 0.88f, 1f), -5);
+                CreateArenaDecoration(parent, "ExtraDeco3Shadow", GetPalmSprite(), new Color(0f, 0f, 0f, 0.18f), new Vector3(0f, -5.54f, 0f), new Vector3(1.24f, 1.12f, 1f), -6);
+                CreateArenaDecoration(parent, "ExtraDeco3", GetPalmSprite(), new Color(0.24f, 0.62f, 0.28f, 1f), new Vector3(-0.16f, -5.34f, 0f), new Vector3(1.08f, 0.98f, 1f), -5);
+                break;
+            case MapStyle.TurtleBack:
+                CreateArenaDecoration(parent, "ExtraDeco1Shadow", GetSmallCircleSprite(), new Color(0f, 0f, 0f, 0.18f), new Vector3(-5.8f, -2.8f, 0f), new Vector3(0.9f, 0.66f, 1f), -6);
+                CreateArenaDecoration(parent, "ExtraDeco1", GetSmallCircleSprite(), new Color(0.84f, 0.93f, 0.78f, 1f), new Vector3(-6f, -2.58f, 0f), new Vector3(0.72f, 0.52f, 1f), -5);
+                CreateArenaDecoration(parent, "ExtraDeco2Shadow", GetSmallCircleSprite(), new Color(0f, 0f, 0f, 0.18f), new Vector3(5.7f, -2.5f, 0f), new Vector3(0.9f, 0.66f, 1f), -6);
+                CreateArenaDecoration(parent, "ExtraDeco2", GetSmallCircleSprite(), new Color(0.84f, 0.93f, 0.78f, 1f), new Vector3(5.5f, -2.28f, 0f), new Vector3(0.72f, 0.52f, 1f), -5);
+                CreateArenaDecoration(parent, "ExtraDeco3Shadow", GetPalmSprite(), new Color(0f, 0f, 0f, 0.18f), new Vector3(0.1f, 5.02f, 0f), new Vector3(1.1f, 1.02f, 1f), -6);
+                CreateArenaDecoration(parent, "ExtraDeco3", GetPalmSprite(), new Color(0.24f, 0.66f, 0.3f, 1f), new Vector3(-0.08f, 5.2f, 0f), new Vector3(0.98f, 0.94f, 1f), -5);
+                CreateArenaDecoration(parent, "ExtraDeco4Shadow", GetStarSprite(), new Color(0f, 0f, 0f, 0.14f), new Vector3(2.3f, 3.64f, 0f), new Vector3(1f, 1f, 1f), -6);
+                CreateArenaDecoration(parent, "ExtraDeco4", GetStarSprite(), new Color(1f, 0.72f, 0.86f, 1f), new Vector3(2.14f, 3.82f, 0f), new Vector3(0.88f, 0.88f, 1f), -5);
+                break;
+            case MapStyle.DiamondCay:
+                CreateArenaDecoration(parent, "ExtraDeco1Shadow", GetPalmSprite(), new Color(0f, 0f, 0f, 0.18f), new Vector3(0f, 6.08f, 0f), new Vector3(1.1f, 1f, 1f), -6);
+                CreateArenaDecoration(parent, "ExtraDeco1", GetPalmSprite(), new Color(0.22f, 0.64f, 0.28f, 1f), new Vector3(-0.16f, 6.28f, 0f), new Vector3(0.98f, 0.92f, 1f), -5);
+                CreateArenaDecoration(parent, "ExtraDeco2Shadow", GetPalmSprite(), new Color(0f, 0f, 0f, 0.18f), new Vector3(0f, -6.12f, 0f), new Vector3(1.1f, 1f, 1f), -6);
+                CreateArenaDecoration(parent, "ExtraDeco2", GetPalmSprite(), new Color(0.22f, 0.64f, 0.28f, 1f), new Vector3(0.16f, -5.92f, 0f), new Vector3(0.98f, 0.92f, 1f), -5);
+                CreateArenaDecoration(parent, "ExtraDeco3Shadow", GetSmallCircleSprite(), new Color(0f, 0f, 0f, 0.16f), new Vector3(-6.2f, 0f, 0f), new Vector3(0.8f, 0.58f, 1f), -6);
+                CreateArenaDecoration(parent, "ExtraDeco3", GetSmallCircleSprite(), new Color(0.95f, 0.98f, 1f, 1f), new Vector3(-6.4f, 0.18f, 0f), new Vector3(0.62f, 0.44f, 1f), -5);
+                CreateArenaDecoration(parent, "ExtraDeco4Shadow", GetSmallCircleSprite(), new Color(0f, 0f, 0f, 0.16f), new Vector3(6.2f, 0f, 0f), new Vector3(0.8f, 0.58f, 1f), -6);
+                CreateArenaDecoration(parent, "ExtraDeco4", GetSmallCircleSprite(), new Color(0.95f, 0.98f, 1f, 1f), new Vector3(6f, 0.18f, 0f), new Vector3(0.62f, 0.44f, 1f), -5);
                 break;
         }
     }
@@ -1702,6 +1937,54 @@ public class GameManager : MonoBehaviour
                 patternSize = runtimeArenaRadius * 1.4f;
                 waterPatternAlpha = 0.62f;
                 break;
+            case MapStyle.CoralMaze:
+                waterColor = new Color(0.14f, 0.78f, 0.92f, 1f);
+                islandTopColor = new Color(0.97f, 0.9f, 0.7f, 1f);
+                islandSideColor = new Color(0.78f, 0.67f, 0.56f, 1f);
+                deepSideColor = new Color(0.58f, 0.49f, 0.4f, 1f);
+                islandSize = runtimeArenaRadius * 1.6f;
+                patternSize = runtimeArenaRadius * 1.44f;
+                waterPatternAlpha = 0.7f;
+                break;
+            case MapStyle.SplitShoals:
+                waterColor = new Color(0.2f, 0.7f, 0.96f, 1f);
+                islandTopColor = new Color(0.98f, 0.9f, 0.76f, 1f);
+                islandSideColor = new Color(0.79f, 0.72f, 0.6f, 1f);
+                deepSideColor = new Color(0.63f, 0.56f, 0.46f, 1f);
+                islandSize = runtimeArenaRadius * 1.72f;
+                patternSize = runtimeArenaRadius * 1.5f;
+                waterPatternAlpha = 0.56f;
+                break;
+            case MapStyle.SunkenCrown:
+                waterColor = new Color(0.12f, 0.64f, 0.94f, 1f);
+                islandTopColor = new Color(0.96f, 0.88f, 0.66f, 1f);
+                islandSideColor = new Color(0.77f, 0.69f, 0.54f, 1f);
+                deepSideColor = new Color(0.58f, 0.52f, 0.4f, 1f);
+                islandSize = runtimeArenaRadius * 1.68f;
+                patternSize = runtimeArenaRadius * 1.42f;
+                waterPatternAlpha = 0.64f;
+                showInnerWater = true;
+                innerWaterScale = runtimeArenaRadius * 0.56f;
+                innerWaterPosition = new Vector3(0f, 0.06f, 0f);
+                break;
+            case MapStyle.TurtleBack:
+                waterColor = new Color(0.18f, 0.72f, 0.9f, 1f);
+                islandTopColor = new Color(0.84f, 0.9f, 0.68f, 1f);
+                islandSideColor = new Color(0.65f, 0.74f, 0.52f, 1f);
+                deepSideColor = new Color(0.48f, 0.57f, 0.41f, 1f);
+                islandSize = runtimeArenaRadius * 1.76f;
+                patternSize = runtimeArenaRadius * 1.48f;
+                waterPatternAlpha = 0.54f;
+                break;
+            case MapStyle.DiamondCay:
+                waterColor = new Color(0.24f, 0.8f, 0.99f, 1f);
+                islandTopColor = new Color(0.99f, 0.92f, 0.78f, 1f);
+                islandSideColor = new Color(0.82f, 0.75f, 0.62f, 1f);
+                deepSideColor = new Color(0.66f, 0.58f, 0.48f, 1f);
+                islandSize = runtimeArenaRadius * 1.42f;
+                patternSize = runtimeArenaRadius * 1.16f;
+                waterPatternAlpha = 0.72f;
+                break;
         }
     }
 
@@ -1712,7 +1995,7 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        int facetCount = 16;
+        int facetCount = currentMapStyle == MapStyle.TurtleBack ? 22 : currentMapStyle == MapStyle.LongStrip ? 18 : 20;
         for (int i = 0; i < facetCount; i++)
         {
             float t = i / (float)(facetCount - 1);
@@ -1736,6 +2019,30 @@ public class GameManager : MonoBehaviour
             if (facet != null)
             {
                 facet.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(-22f, 22f, t));
+            }
+        }
+
+        int topFacetCount = 12;
+        for (int i = 0; i < topFacetCount; i++)
+        {
+            float t = i / (float)(topFacetCount - 1);
+            float angle = Mathf.Lerp(190f, 350f, t) * Mathf.Deg2Rad;
+            float radius = runtimeArenaRadius * 0.76f;
+            Vector3 localPosition = new Vector3(Mathf.Cos(angle) * radius, Mathf.Sin(angle) * radius + 0.16f, 0f);
+            float shade = 0.9f + Mathf.Sin(t * Mathf.PI) * 0.05f;
+            CreateOrUpdateArenaLayer(
+                parent,
+                "TopFacet_" + i,
+                GetSquareSprite(),
+                new Color(shade, shade * 0.96f, shade * 0.84f, 0.14f),
+                localPosition,
+                new Vector3(0.9f, 1.6f, 1f),
+                -6);
+
+            Transform facet = parent.Find("TopFacet_" + i);
+            if (facet != null)
+            {
+                facet.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(-35f, 35f, t));
             }
         }
     }

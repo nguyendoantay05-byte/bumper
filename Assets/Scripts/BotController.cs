@@ -22,8 +22,8 @@ public class BotController : FighterController
     [SerializeField] private float allySeparationWeight = 1.75f;
     [SerializeField] private float crowdPenaltyRadius = 4.6f;
     [SerializeField] private float crowdPenaltyWeight = 2.6f;
-    [SerializeField] private float botMoveForceMultiplier = 0.88f;
-    [SerializeField] private float botMaxSpeedMultiplier = 0.84f;
+    [SerializeField] private float botMoveForceMultiplier = 0.66f;
+    [SerializeField] private float botMaxSpeedMultiplier = 0.62f;
     [SerializeField] private float targetDiversityWeight = 1.9f;
 
     private FighterController currentTarget;

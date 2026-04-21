@@ -207,17 +207,17 @@ public static class BumperBootstrapper
         howPanel.SetActive(false);
 
         CreateTitle(mainPanel.transform, "Bumper");
-        CreateButton(mainPanel.transform, "Start", new Vector2(0, 80), "OnStartClicked", mainMenu);
-        CreateButton(mainPanel.transform, "Settings", new Vector2(0, 20), "OnSettingsClicked", mainMenu);
-        CreateButton(mainPanel.transform, "How To Play", new Vector2(0, -40), "OnHowToPlayClicked", mainMenu);
-        CreateButton(mainPanel.transform, "Exit", new Vector2(0, -100), "OnExitClicked", mainMenu);
+        CreateButton(mainPanel.transform, "Bắt Đầu", new Vector2(0, 80), "OnStartClicked", mainMenu, "Start");
+        CreateButton(mainPanel.transform, "Cài Đặt", new Vector2(0, 20), "OnSettingsClicked", mainMenu, "Settings");
+        CreateButton(mainPanel.transform, "Hướng Dẫn", new Vector2(0, -40), "OnHowToPlayClicked", mainMenu, "How To Play");
+        CreateButton(mainPanel.transform, "Thoát", new Vector2(0, -100), "OnExitClicked", mainMenu, "Exit");
 
         SettingsManager settingsManager = settingsPanel.AddComponent<SettingsManager>();
         CreateSettingsContent(settingsPanel.transform, settingsManager);
-        CreateBackButton(settingsPanel.transform, "Back", "OnBackFromSettings", mainMenu);
+        CreateBackButton(settingsPanel.transform, "Quay Lại", "OnBackFromSettings", mainMenu, "Back");
 
         CreateHowToPlayContent(howPanel.transform);
-        CreateBackButton(howPanel.transform, "Back", "OnBackFromHowToPlay", mainMenu);
+        CreateBackButton(howPanel.transform, "Quay Lại", "OnBackFromHowToPlay", mainMenu, "Back");
 
         SetField(mainMenu, "mainPanel", mainPanel);
         SetField(mainMenu, "settingsPanel", settingsPanel);
@@ -243,12 +243,12 @@ public static class BumperBootstrapper
 
         Canvas canvas = CreateCanvas("Canvas");
         GameObject panel = CreatePanel(canvas.transform, "LobbyPanel");
-        CreateTitle(panel.transform, "Waiting Lobby");
+        CreateTitle(panel.transform, "Phòng Chờ");
         TMP_InputField inputField = CreateInputField(panel.transform, "NameInput", new Vector2(0, 40));
-        CreateLabel(panel.transform, "Instructions", "Type your name and press Play.", new Vector2(0, -10));
-        TMP_Text botInfo = CreateLabel(panel.transform, "BotInfo", "Bots: 3", new Vector2(0, 100));
-        CreateButton(panel.transform, "Play", new Vector2(0, -80), "OnPlayClicked", lobbyManager);
-        CreateButton(panel.transform, "Back", new Vector2(0, -140), "OnBackClicked", lobbyManager);
+        CreateLabel(panel.transform, "Instructions", "Nhập tên và bấm Chơi.", new Vector2(0, -10));
+        TMP_Text botInfo = CreateLabel(panel.transform, "BotInfo", "Số bot: 3", new Vector2(0, 100));
+        CreateButton(panel.transform, "Chơi", new Vector2(0, -80), "OnPlayClicked", lobbyManager, "Play");
+        CreateButton(panel.transform, "Quay Lại", new Vector2(0, -140), "OnBackClicked", lobbyManager, "Back");
 
         SetField(lobbyManager, "nameInputField", inputField);
         SetField(lobbyManager, "instructionsText", panel.transform.Find("Instructions")?.GetComponent<TMP_Text>());
@@ -453,9 +453,9 @@ public static class BumperBootstrapper
         return tmp;
     }
 
-    private static Button CreateButton(Transform parent, string text, Vector2 anchoredPosition, string methodName, Object target)
+    private static Button CreateButton(Transform parent, string text, Vector2 anchoredPosition, string methodName, Object target, string objectName = null)
     {
-        GameObject buttonGo = new GameObject(text + "Button");
+        GameObject buttonGo = new GameObject((string.IsNullOrEmpty(objectName) ? text : objectName) + "Button");
         buttonGo.transform.SetParent(parent, false);
 
         Image image = buttonGo.AddComponent<Image>();
@@ -507,7 +507,7 @@ public static class BumperBootstrapper
         GameObject textGo = new GameObject("Text");
         textGo.transform.SetParent(field.transform, false);
         TMP_Text text = textGo.AddComponent<TextMeshProUGUI>();
-        text.text = "Player";
+        text.text = "Người chơi";
         text.color = Color.black;
         text.alignment = TextAlignmentOptions.Left;
         RectTransform textRect = textGo.GetComponent<RectTransform>();
@@ -519,7 +519,7 @@ public static class BumperBootstrapper
         GameObject placeholderGo = new GameObject("Placeholder");
         placeholderGo.transform.SetParent(field.transform, false);
         TMP_Text placeholder = placeholderGo.AddComponent<TextMeshProUGUI>();
-        placeholder.text = "Enter your name";
+        placeholder.text = "Nhập tên";
         placeholder.color = new Color(0f, 0f, 0f, 0.4f);
         placeholder.alignment = TextAlignmentOptions.Left;
         RectTransform placeholderRect = placeholderGo.GetComponent<RectTransform>();
@@ -535,36 +535,33 @@ public static class BumperBootstrapper
 
     private static void CreateSettingsContent(Transform parent, SettingsManager settingsManager)
     {
-        TMP_Text volumeLabel = CreateLabel(parent, "VolumeLabel", "Volume: 100%", new Vector2(0, 80));
-        TMP_Text soundLabel = CreateLabel(parent, "SoundLabel", "Sound: On", new Vector2(0, 120), 24);
-        TMP_Text botLabel = CreateLabel(parent, "BotLabel", "Bots: 3", new Vector2(0, 160), 24);
-        CreateButton(parent, "Volume +", new Vector2(0, 20), nameof(SettingsManager.IncreaseVolume), settingsManager);
-        CreateButton(parent, "Volume -", new Vector2(0, -40), nameof(SettingsManager.DecreaseVolume), settingsManager);
-        CreateButton(parent, "Sound Toggle", new Vector2(0, -100), nameof(SettingsManager.ToggleSound), settingsManager);
-        CreateButton(parent, "Bots +", new Vector2(0, -160), nameof(SettingsManager.IncreaseBots), settingsManager);
-        CreateButton(parent, "Bots -", new Vector2(0, -220), nameof(SettingsManager.DecreaseBots), settingsManager);
+        TMP_Text volumeLabel = CreateLabel(parent, "VolumeLabel", "Âm lượng: 100%", new Vector2(0, 190));
+        TMP_Text botLabel = CreateLabel(parent, "BotLabel", "Số bot: 3", new Vector2(0, 34), 24);
+        CreateButton(parent, "Tăng", new Vector2(0, 20), nameof(SettingsManager.IncreaseVolume), settingsManager, "Volume +");
+        CreateButton(parent, "Giảm", new Vector2(0, -40), nameof(SettingsManager.DecreaseVolume), settingsManager, "Volume -");
+        CreateButton(parent, "+", new Vector2(112, 34), nameof(SettingsManager.IncreaseBots), settingsManager, "Bots +");
+        CreateButton(parent, "-", new Vector2(-112, 34), nameof(SettingsManager.DecreaseBots), settingsManager, "Bots -");
 
         SetField(settingsManager, "volumeValueText", volumeLabel);
-        SetField(settingsManager, "soundStateText", soundLabel);
         SetField(settingsManager, "botCountValueText", botLabel);
     }
 
     private static void CreateHowToPlayContent(Transform parent)
     {
-        CreateLabel(parent, "HowText", "WASD / Arrow Keys\nPush bots out of the arena\nLast fighter standing wins", new Vector2(0, 40), 30);
+        CreateLabel(parent, "HowText", "Dùng WASD để di chuyển\nĐẩy đối thủ rơi khỏi đảo\nNgười sống sót cuối cùng sẽ thắng", new Vector2(0, 40), 30);
     }
 
-    private static void CreateBackButton(Transform parent, string text, string methodName, Object target)
+    private static void CreateBackButton(Transform parent, string text, string methodName, Object target, string objectName = null)
     {
-        CreateButton(parent, text, new Vector2(0, -280), methodName, target);
+        CreateButton(parent, text, new Vector2(0, -280), methodName, target, objectName);
     }
 
     private static void CreateHud(Transform parent, UIManager uiManager)
     {
-        TMP_Text playerText = CreateLabel(parent, "PlayerNameText", "Player: Player", new Vector2(-500, 260), 24);
-        TMP_Text botsText = CreateLabel(parent, "BotsRemainingText", "Bots left: 3", new Vector2(-500, 220), 24);
-        TMP_Text eliminatedText = CreateLabel(parent, "EliminatedText", "Knockouts: 0", new Vector2(-500, 180), 24);
-        TMP_Text statusText = CreateLabel(parent, "StatusText", "Fight!", new Vector2(0, 260), 28);
+        TMP_Text playerText = CreateLabel(parent, "PlayerNameText", "Người chơi", new Vector2(-500, 260), 24);
+        TMP_Text botsText = CreateLabel(parent, "BotsRemainingText", "Bot còn lại: 3", new Vector2(-500, 220), 24);
+        TMP_Text eliminatedText = CreateLabel(parent, "EliminatedText", "Hạ gục: 0", new Vector2(-500, 180), 24);
+        TMP_Text statusText = CreateLabel(parent, "StatusText", "Chiến!", new Vector2(0, 260), 28);
 
         SetField(uiManager, "playerNameText", playerText);
         SetField(uiManager, "botsRemainingText", botsText);
@@ -576,10 +573,10 @@ public static class BumperBootstrapper
     {
         GameObject panel = CreatePanel(parent, "ResultPanel");
         panel.SetActive(false);
-        TMP_Text title = CreateLabel(panel.transform, "ResultTitle", "VICTORY", new Vector2(0, 80), 48);
-        TMP_Text description = CreateLabel(panel.transform, "ResultDescription", "You are the last fighter standing.", new Vector2(0, 20), 24);
-        CreateButton(panel.transform, "Replay", new Vector2(0, -60), nameof(UIManager.OnReplayClicked), uiManager);
-        CreateButton(panel.transform, "Back To Menu", new Vector2(0, -120), nameof(UIManager.OnBackToMenuClicked), uiManager);
+        TMP_Text title = CreateLabel(panel.transform, "ResultTitle", "CHIẾN THẮNG", new Vector2(0, 80), 48);
+        TMP_Text description = CreateLabel(panel.transform, "ResultDescription", "Bạn là người cuối cùng còn trên đảo.", new Vector2(0, 20), 24);
+        CreateButton(panel.transform, "Chơi Lại", new Vector2(0, -60), nameof(UIManager.OnReplayClicked), uiManager, "Replay");
+        CreateButton(panel.transform, "Về Menu", new Vector2(0, -120), nameof(UIManager.OnBackToMenuClicked), uiManager, "Back To Menu");
 
         SetField(uiManager, "resultPanel", panel);
         SetField(uiManager, "resultTitleText", title);

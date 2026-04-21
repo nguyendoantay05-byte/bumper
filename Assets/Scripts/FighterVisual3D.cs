@@ -7,6 +7,7 @@ public class FighterVisual3D : MonoBehaviour
 {
     [SerializeField] private float tiltAmount = 7f;
     [SerializeField] private float offsetAmount = 0.08f;
+    [SerializeField] private float rootLeanAngle = 9f;
 
     private FighterController fighter;
     private bool showArrow;
@@ -23,6 +24,7 @@ public class FighterVisual3D : MonoBehaviour
     private Vector3 baseScale;
     private Vector2 lastVelocity;
     private float impactPulse;
+    private float bobTime;
 
     public void Configure(bool isPlayer)
     {
@@ -56,7 +58,9 @@ public class FighterVisual3D : MonoBehaviour
         Vector2 normalized = velocity.sqrMagnitude > 0.001f ? velocity.normalized : Vector2.zero;
         Vector2 acceleration = (velocity - lastVelocity) / Mathf.Max(Time.deltaTime, 0.0001f);
         float accelerationAmount = Mathf.Clamp01(acceleration.magnitude / 22f);
+        float speedAmount = Mathf.Clamp01(velocity.magnitude / 10.5f);
         lastVelocity = velocity;
+        bobTime += Time.deltaTime * (1.4f + speedAmount * 4.2f);
 
         ApplyLayerMotion("TopCap", topCapBase, normalized, 0.12f);
         ApplyLayerMotion("Gloss", glossBase, normalized, 0.16f);
@@ -69,6 +73,7 @@ public class FighterVisual3D : MonoBehaviour
         PulseHighlight();
         ApplyBodyLean(normalized, accelerationAmount);
         ApplyArrow(normalized);
+        ApplyRootTilt(normalized, speedAmount);
     }
 
     private void ApplyLayerMotion(string childName, Vector3 basePosition, Vector2 direction, float strength)
@@ -96,10 +101,12 @@ public class FighterVisual3D : MonoBehaviour
 
         if (softShadow != null)
         {
-            softShadow.localPosition = new Vector3(softShadowBase.x + direction.x * 0.08f, softShadowBase.y - direction.y * 0.04f, softShadowBase.z);
+            softShadow.localPosition = new Vector3(softShadowBase.x + direction.x * 0.1f, softShadowBase.y - direction.y * 0.06f, softShadowBase.z);
+            softShadow.localScale = new Vector3(1.18f + Mathf.Abs(direction.x) * 0.08f, 1.18f + Mathf.Abs(direction.y) * 0.08f, 1f);
         }
 
         shadow.localPosition = new Vector3(shadowBase.x + direction.x * 0.06f, shadowBase.y - direction.y * 0.03f, shadowBase.z);
+        shadow.localScale = new Vector3(1.08f + Mathf.Abs(direction.x) * 0.06f, 1.08f + Mathf.Abs(direction.y) * 0.06f, 1f);
     }
 
     private void PulseHighlight()
@@ -139,9 +146,16 @@ public class FighterVisual3D : MonoBehaviour
         float speedAmount = fighter != null && fighter.Body != null
             ? Mathf.Clamp01(fighter.Body.linearVelocity.magnitude / 12f)
             : 0f;
-        float squash = 1f + accelerationAmount * 0.14f + speedAmount * 0.1f + impactPulse * 0.1f;
-        float stretch = 1f - accelerationAmount * 0.11f - speedAmount * 0.08f - impactPulse * 0.08f;
+        float bob = Mathf.Sin(bobTime) * (0.01f + speedAmount * 0.02f);
+        float squash = 1f + accelerationAmount * 0.14f + speedAmount * 0.1f + impactPulse * 0.1f + bob;
+        float stretch = 1f - accelerationAmount * 0.11f - speedAmount * 0.08f - impactPulse * 0.08f - bob * 0.7f;
         transform.localScale = new Vector3(baseScale.x * squash, baseScale.y * stretch, baseScale.z);
+    }
+
+    private void ApplyRootTilt(Vector2 direction, float speedAmount)
+    {
+        float tiltZ = -direction.x * rootLeanAngle * (0.3f + speedAmount * 0.7f);
+        transform.rotation = Quaternion.Euler(0f, 0f, tiltZ);
     }
 
     private void ApplyArrow(Vector2 direction)

@@ -15,7 +15,7 @@ public static class UIRuntimeFix
 
     private static void FixCanvases()
     {
-        Canvas[] canvases = Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include);
+        Canvas[] canvases = Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         for (int i = 0; i < canvases.Length; i++)
         {
             Canvas canvas = canvases[i];
@@ -53,7 +53,7 @@ public static class UIRuntimeFix
 
     private static void FixEventSystems()
     {
-        EventSystem[] eventSystems = Object.FindObjectsByType<EventSystem>(FindObjectsInactive.Include);
+        EventSystem[] eventSystems = Object.FindObjectsByType<EventSystem>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         for (int i = 0; i < eventSystems.Length; i++)
         {
             EventSystem eventSystem = eventSystems[i];

@@ -43,6 +43,13 @@ public class UIClickRouter : MonoBehaviour
             return;
         }
 
+        // Khi scene đã có Input Module hoạt động bình thường,
+        // không can thiệp để tránh gọi onClick hai lần.
+        if (eventSystem.currentInputModule != null && eventSystem.currentInputModule.isActiveAndEnabled)
+        {
+            return;
+        }
+
         if (pointerEventData == null)
         {
             pointerEventData = new PointerEventData(eventSystem);

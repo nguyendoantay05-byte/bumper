@@ -59,12 +59,12 @@ public class UIManager : MonoBehaviour
 
         if (botsRemainingText != null)
         {
-            botsRemainingText.text = "Bots: " + GameManager.Instance.RemainingBots;
+            botsRemainingText.text = "Bot còn lại: " + GameManager.Instance.RemainingBots;
         }
 
         if (eliminatedText != null)
         {
-            eliminatedText.text = "KO: " + GameManager.Instance.EliminatedBots;
+            eliminatedText.text = "Bạn hạ gục: " + GameManager.Instance.PlayerKnockouts;
         }
 
         if (statusText != null)
@@ -82,14 +82,14 @@ public class UIManager : MonoBehaviour
 
         if (resultTitleText != null)
         {
-            resultTitleText.text = victory ? "VICTORY" : "DEFEAT";
+            resultTitleText.text = victory ? "CHIẾN THẮNG" : "THẤT BẠI";
         }
 
         if (resultDescriptionText != null)
         {
             resultDescriptionText.text = victory
-                ? "You are the last fighter standing."
-                : "Your fighter was pushed out of the arena.";
+                ? "Bạn là người cuối cùng còn trên đảo."
+                : "Bạn đã bị đẩy rơi khỏi đấu trường.";
         }
     }
 
@@ -274,6 +274,7 @@ public class UIManager : MonoBehaviour
         }
 
         StyleResultButtons();
+        ApplyButtonVietnameseLabels();
     }
 
     private void CreateResultDecor(Transform parent)
@@ -332,7 +333,7 @@ public class UIManager : MonoBehaviour
 
     private void StyleButton(string buttonName, Color backgroundColor)
     {
-        Button[] buttons = FindObjectsByType<Button>(FindObjectsInactive.Include);
+        Button[] buttons = FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         for (int i = 0; i < buttons.Length; i++)
         {
             if (buttons[i].name != buttonName)
@@ -356,9 +357,33 @@ public class UIManager : MonoBehaviour
         }
     }
 
+    private void ApplyButtonVietnameseLabels()
+    {
+        SetButtonLabel("ReplayButton", "Chơi Lại");
+        SetButtonLabel("Back To MenuButton", "Về Menu");
+    }
+
+    private void SetButtonLabel(string buttonName, string labelText)
+    {
+        Button[] buttons = FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            if (buttons[i].name != buttonName)
+            {
+                continue;
+            }
+
+            TMP_Text label = buttons[i].GetComponentInChildren<TMP_Text>(true);
+            if (label != null)
+            {
+                label.text = labelText;
+            }
+        }
+    }
+
     private void BindButton(string buttonName, UnityEngine.Events.UnityAction action)
     {
-        Button[] buttons = FindObjectsByType<Button>(FindObjectsInactive.Include);
+        Button[] buttons = FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         for (int i = 0; i < buttons.Length; i++)
         {
             if (buttons[i].name != buttonName)

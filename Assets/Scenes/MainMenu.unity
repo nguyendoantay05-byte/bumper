@@ -3443,12 +3443,11 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'WASD / Arrow Keys
+  m_text: 'Dùng WASD để di chuyển
 
-    Push bots out of the arena
+    Đẩy đối thủ rơi khỏi đảo
 
-    Last fighter standing
-    wins'
+    Người sống sót cuối cùng sẽ thắng'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 0}
   m_sharedMaterial: {fileID: 0}

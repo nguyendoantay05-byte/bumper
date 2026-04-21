@@ -14,9 +14,9 @@ public abstract class FighterController : MonoBehaviour
     [SerializeField] private bool isPlayerControlled;
 
     [Header("Movement")]
-    [SerializeField] protected float moveForce = 22f;
-    [SerializeField] protected float maxSpeed = 7.8f;
-    [SerializeField] protected float collisionBurstMaxSpeed = 24f;
+    [SerializeField] protected float moveForce = 19.5f;
+    [SerializeField] protected float maxSpeed = 6.9f;
+    [SerializeField] protected float collisionBurstMaxSpeed = 21f;
     [SerializeField] protected float linearDrag = 2f;
     [SerializeField] protected float angularDrag = 5f;
 
@@ -26,6 +26,8 @@ public abstract class FighterController : MonoBehaviour
     [SerializeField] protected float attackerImpulseMultiplier = 0.16f;
     [SerializeField] protected float impactSpeedBonus = 0.22f;
     [SerializeField] protected float impactBurstDuration = 0.18f;
+    [SerializeField] protected float playerKnockbackMultiplier = 0.52f;
+    [SerializeField] protected float botKnockbackMultiplier = 1.45f;
 
     protected Rigidbody2D rb;
     protected Collider2D cachedCollider;
@@ -36,11 +38,15 @@ public abstract class FighterController : MonoBehaviour
     private bool eliminated;
     private float impactBurstTimer;
     private float inputSpeedCapBonus;
+    private FighterController lastImpactSource;
+    private float lastImpactTime;
 
     public string FighterDisplayName => fighterDisplayName;
     public bool IsPlayerControlled => isPlayerControlled;
     public bool IsEliminated => eliminated;
     public Rigidbody2D Body => rb;
+    public FighterController LastImpactSource => lastImpactSource;
+    public float LastImpactTime => lastImpactTime;
 
     public Vector2 Position => rb != null ? rb.position : (Vector2)transform.position;
 
@@ -165,21 +171,35 @@ public abstract class FighterController : MonoBehaviour
         float otherAttackScore = Vector2.Dot(otherVelocity, -pushDirection);
         float impactDelta = Mathf.Abs(myAttackScore - otherAttackScore);
         float impactBoost = 1f + Mathf.Clamp(impactDelta * impactSpeedBonus, 0f, 3.2f);
-        float sharedImpulse = defenderImpulseMultiplier * impactBoost;
+        float selfImpulse = defenderImpulseMultiplier * impactBoost;
+        float otherImpulse = defenderImpulseMultiplier * impactBoost;
 
-        ApplyKnockback(-pushDirection, sharedImpulse);
-        other.ApplyKnockback(pushDirection, sharedImpulse);
+        if (IsPlayerControlled && !other.IsPlayerControlled)
+        {
+            selfImpulse *= playerKnockbackMultiplier;
+            otherImpulse *= botKnockbackMultiplier;
+        }
+        else if (!IsPlayerControlled && other.IsPlayerControlled)
+        {
+            selfImpulse *= botKnockbackMultiplier;
+            otherImpulse *= playerKnockbackMultiplier;
+        }
+
+        ApplyKnockback(-pushDirection, selfImpulse);
+        other.ApplyKnockback(pushDirection, otherImpulse);
+        RegisterImpactSource(other);
+        other.RegisterImpactSource(this);
 
         FighterVisual3D myVisual = GetComponent<FighterVisual3D>();
         if (myVisual != null)
         {
-            myVisual.PlayImpactPulse(Mathf.Clamp01(sharedImpulse * 0.2f));
+            myVisual.PlayImpactPulse(Mathf.Clamp01(selfImpulse * 0.2f));
         }
 
         FighterVisual3D otherVisual = other.GetComponent<FighterVisual3D>();
         if (otherVisual != null)
         {
-            otherVisual.PlayImpactPulse(Mathf.Clamp01(sharedImpulse * 0.2f));
+            otherVisual.PlayImpactPulse(Mathf.Clamp01(otherImpulse * 0.2f));
         }
 
         if (GetInstanceID() < other.GetInstanceID())
@@ -202,6 +222,17 @@ public abstract class FighterController : MonoBehaviour
     public void SetDisplayName(string newName)
     {
         fighterDisplayName = string.IsNullOrWhiteSpace(newName) ? "Fighter" : newName.Trim();
+    }
+
+    public void RegisterImpactSource(FighterController source)
+    {
+        if (source == null || source == this)
+        {
+            return;
+        }
+
+        lastImpactSource = source;
+        lastImpactTime = Time.time;
     }
 
     public void SetPlayerControlled(bool value)

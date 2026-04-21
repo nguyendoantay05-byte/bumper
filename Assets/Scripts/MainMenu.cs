@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 /// <summary>
 /// Điều khiển màn hình Main Menu.
 /// Dùng các panel trong cùng một scene để mở Settings và How To Play.
@@ -15,6 +16,7 @@ public class MainMenu : MonoBehaviour
     {
         UIRuntimeFix.Apply();
         WireButtons();
+        ApplyVietnameseLabels();
         ShowMainPanel();
     }
 
@@ -114,6 +116,51 @@ public class MainMenu : MonoBehaviour
         }
     }
 
+    private void ApplyVietnameseLabels()
+    {
+        SetButtonLabel("StartButton", "Bắt Đầu");
+        SetButtonLabel("SettingsButton", "Cài Đặt");
+        SetButtonLabel("How To PlayButton", "Hướng Dẫn");
+        SetButtonLabel("ExitButton", "Thoát");
+        SetButtonLabel("BackButton", "Quay Lại");
+
+        SetTextByObjectName("TitleText", "Bumper");
+        SetTextByObjectName("Title", "Bumper");
+        SetTextByObjectName("HowText", "Dùng WASD để di chuyển\nĐẩy đối thủ rơi khỏi đảo\nNgười trụ lại cuối cùng sẽ thắng");
+        SetTextByObjectName("VolumeLabel", "Âm lượng: 100%");
+        SetTextByObjectName("BotLabel", "Số bot: 3");
+    }
+
+    private void SetButtonLabel(string buttonName, string labelText)
+    {
+        Button[] buttons = FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            if (buttons[i].name != buttonName)
+            {
+                continue;
+            }
+
+            TMP_Text label = buttons[i].GetComponentInChildren<TMP_Text>(true);
+            if (label != null)
+            {
+                label.text = labelText;
+            }
+        }
+    }
+
+    private void SetTextByObjectName(string objectName, string content)
+    {
+        TMP_Text[] texts = FindObjectsByType<TMP_Text>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < texts.Length; i++)
+        {
+            if (texts[i].name == objectName)
+            {
+                texts[i].text = content;
+            }
+        }
+    }
+
     private void BindButton(string buttonName, UnityEngine.Events.UnityAction action, Transform root = null)
     {
         if (root != null)
@@ -132,7 +179,7 @@ public class MainMenu : MonoBehaviour
             }
         }
 
-        Button[] buttons = FindObjectsByType<Button>(FindObjectsInactive.Include);
+        Button[] buttons = FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         for (int i = 0; i < buttons.Length; i++)
         {
             if (buttons[i].name != buttonName)

@@ -33,6 +33,7 @@ public class ArenaBoundary : MonoBehaviour
     [SerializeField] private float innerHoleRadius = 0f;
     [SerializeField] private Vector2 innerHoleOffset = Vector2.zero;
     [SerializeField] private HoleZone[] extraHoles = new HoleZone[0];
+    [SerializeField] private float holeDetectionPadding = 0.55f;
     [SerializeField] private Color gizmoColor = new Color(0.2f, 0.9f, 0.9f, 0.6f);
 
     public float Radius => radius;
@@ -139,7 +140,7 @@ public class ArenaBoundary : MonoBehaviour
         if (innerHoleRadius > 0f)
         {
             float distanceFromPrimaryHole = Vector2.Distance(GetInnerHoleWorldCenter(), worldPosition);
-            if (distanceFromPrimaryHole <= innerHoleRadius)
+            if (distanceFromPrimaryHole <= innerHoleRadius + holeDetectionPadding)
             {
                 return true;
             }
@@ -158,7 +159,7 @@ public class ArenaBoundary : MonoBehaviour
                 continue;
             }
 
-            if (Vector2.Distance(Center + hole.offset, worldPosition) <= hole.radius)
+            if (Vector2.Distance(Center + hole.offset, worldPosition) <= hole.radius + holeDetectionPadding)
             {
                 return true;
             }
@@ -173,7 +174,7 @@ public class ArenaBoundary : MonoBehaviour
 
         if (innerHoleRadius > 0f)
         {
-            float distance = Vector2.Distance(GetInnerHoleWorldCenter(), worldPosition) - innerHoleRadius;
+            float distance = Vector2.Distance(GetInnerHoleWorldCenter(), worldPosition) - (innerHoleRadius + holeDetectionPadding);
             nearestDistance = Mathf.Min(nearestDistance, distance);
         }
 
@@ -187,7 +188,7 @@ public class ArenaBoundary : MonoBehaviour
                     continue;
                 }
 
-                float distance = Vector2.Distance(Center + hole.offset, worldPosition) - hole.radius;
+                float distance = Vector2.Distance(Center + hole.offset, worldPosition) - (hole.radius + holeDetectionPadding);
                 nearestDistance = Mathf.Min(nearestDistance, distance);
             }
         }
